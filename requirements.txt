@@ -3,5 +3,5 @@ numpy
 matplotlib
 seaborn
 streamlit==1.8.0
-statsmodel
+statsmodels
 tensorflow[and-cuda]
