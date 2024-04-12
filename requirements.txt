@@ -1,7 +1,10 @@
-pandas
-numpy
-matplotlib
-seaborn
+tensorflow[and-cuda]
 streamlit==1.8.0
 statsmodels
-tensorflow[and-cuda]
+numpy
+matplotlib
+pandas
+seaborn
+joblib
+scikit-learn
+altair==4
