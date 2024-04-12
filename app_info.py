@@ -1,4 +1,12 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import keras
+import joblib
+from utils import create_dataset
+
 # Page configuration
 st.set_page_config(
     page_title="Price Forecast Analysis",
@@ -6,89 +14,197 @@ st.set_page_config(
     layout="wide",
 )
 
-# Sidebar
-st.sidebar.success("Select a page above.")
-
-st.image('image-1.png', use_column_width=True)
-
-st.markdown(
-
+def main():
+    st.sidebar.title('Navigation')
+    page = st.sidebar.radio("Go to", ["App Info", "Forecast Analysis"])
     
-"""
-## US Electricity Prices In USA
+    if page == "App Info":
+        st.title("App Info")
 
-Data source: https://www.kaggle.com/datasets/alistairking/electricity-prices?select=clean_data.csv
+        st.image('image-1.png', use_column_width=True)
 
-This comprehensive dataset offers a detailed look at the United States electricity market, providing valuable insights into prices, sales, 
-and revenue across various states, sectors, and years. With data spanning from 2001 onwards to 2024, this dataset is a powerful tool for analyzing the complex dynamics of the US electricity market and understanding how it has evolved over time.
-"""
-)
-st.write(
-    """
-The dataset includes eight key variables:
+        st.markdown(
 
-    -- year: The year of the observation
+            
+        """
+        ## US Electricity Prices In USA
 
-    -- month: The month of the observation
+        Data source: https://www.kaggle.com/datasets/alistairking/electricity-prices?select=clean_data.csv
 
-    -- stateDescription: The name of the state
+        This comprehensive dataset offers a detailed look at the United States electricity market, providing valuable insights into prices, sales, 
+        and revenue across various states, sectors, and years. With data spanning from 2001 onwards to 2024, this dataset is a powerful tool for analyzing the complex dynamics of the US electricity market and understanding how it has evolved over time.
+        """
+        )
+        st.write(
+            """
+        The dataset includes eight key variables:
 
-    -- sectorName: The sector of the electricity market (residential, commercial, industrial, other, or all sectors)
+            -- year: The year of the observation
 
-    -- customers: The number of customers (missing for some observations)
+            -- month: The month of the observation
 
-    -- price: The average price of electricity per kilowatt-hour (kWh) in cents
+            -- stateDescription: The name of the state
 
-    -- revenue: The total revenue generated from electricity sales in millions of dollars
+            -- sectorName: The sector of the electricity market (residential, commercial, industrial, other, or all sectors)
 
-    -- sales: The total electricity sales in millions of kilowatt-hours (kWh)
+            -- customers: The number of customers (missing for some observations)
 
-"""
-)
-st.markdown(
-    """
-    ### Importance of the Dataset
+            -- price: The average price of electricity per kilowatt-hour (kWh) in cents
 
-        By providing such granular data, this dataset enables users to conduct in-depth analyses of electricity market trends, 
-        comparing prices and consumption patterns across different states and sectors, and examining the impact of seasonality 
-        on demand and prices.
+            -- revenue: The total revenue generated from electricity sales in millions of dollars
 
-        One of the primary applications of this dataset is in forecasting future electricity prices and sales based on historical trends. 
-        By leveraging the extensive time series data available, researchers and analysts can develop sophisticated models to predict how prices 
-        and demand may change in the coming years, taking into account factors such as economic growth, population shifts, and policy changes. 
-        This predictive power is invaluable for policymakers, energy companies, and investors looking to make informed decisions in the rapidly evolving electricity market.
+            -- sales: The total electricity sales in millions of kilowatt-hours (kWh)
 
-        Another key use case for this dataset is in investigating the complex relationships between electricity prices, sales volumes, and revenue. 
-        By combining the price, sales, and revenue data, users can explore how changes in prices impact consumer behavior and utility company bottom lines. 
-        This analysis can shed light on important questions such as the price elasticity of electricity demand, the effectiveness of energy efficiency programs, 
-        and the potential impact of new technologies like renewable energy and energy storage on the market.
+        """
+        )
+        st.markdown(
+            """
+            ### Importance of the Dataset
 
-        Beyond its immediate applications in the energy sector, this dataset also has broader implications for understanding the 
-        US economy and society as a whole. Electricity is a critical input for businesses and households across the country, and changes in 
-        electricity prices and consumption can have far-reaching effects on economic growth, competitiveness, and quality of life. By providing such a rich and 
-        detailed portrait of the US electricity market, this dataset opens up new avenues for research and insights that can inform public policy, business strategy, 
-        and academic inquiry.
-"""
-)
+                By providing such granular data, this dataset enables users to conduct in-depth analyses of electricity market trends, 
+                comparing prices and consumption patterns across different states and sectors, and examining the impact of seasonality 
+                on demand and prices.
+
+                One of the primary applications of this dataset is in forecasting future electricity prices and sales based on historical trends. 
+                By leveraging the extensive time series data available, researchers and analysts can develop sophisticated models to predict how prices 
+                and demand may change in the coming years, taking into account factors such as economic growth, population shifts, and policy changes. 
+                This predictive power is invaluable for policymakers, energy companies, and investors looking to make informed decisions in the rapidly evolving electricity market.
+
+                Another key use case for this dataset is in investigating the complex relationships between electricity prices, sales volumes, and revenue. 
+                By combining the price, sales, and revenue data, users can explore how changes in prices impact consumer behavior and utility company bottom lines. 
+                This analysis can shed light on important questions such as the price elasticity of electricity demand, the effectiveness of energy efficiency programs, 
+                and the potential impact of new technologies like renewable energy and energy storage on the market.
+
+                Beyond its immediate applications in the energy sector, this dataset also has broader implications for understanding the 
+                US economy and society as a whole. Electricity is a critical input for businesses and households across the country, and changes in 
+                electricity prices and consumption can have far-reaching effects on economic growth, competitiveness, and quality of life. By providing such a rich and 
+                detailed portrait of the US electricity market, this dataset opens up new avenues for research and insights that can inform public policy, business strategy, 
+                and academic inquiry.
+        """
+        )
 
 
-st.markdown(
-    """
-    ## Forecast Analysis
+        st.markdown(
+            """
+            ## Forecast Analysis
 
-        In this section, we will explore the dataset and perform a forecast analysis to predict future electricity prices based on historical data. 
-        We will use machine learning models to train on the available data and generate forecasts for electricity prices in the coming years. 
-        By leveraging the power of data science and predictive analytics, we can gain valuable insights into the dynamics of the electricity market and 
-        make informed decisions about future investments and policy directions.
-        
-        Data Analysis showed us that the data is stationary, there's no seasonlity or trends in the data. We also observed that the data is not correlated (price, revenue, sales, customers).
-        One other important observation is that the data is that there's is no lorn relationship between the price of electricity, informing us that the model should have lesser sequence length (3)
-        
-        After a lot of analysis, we have come to the conclusion that the best model to use for forecasting electricity prices is the LSTM model.
+            This is a Multivariate Time Series Forecasting Analysis.
 
-        It outperforms other models like ARIMA, SARIMA, and Exponential Smoothing. The LSTM model is a type of recurrent neural network that is well-suited for sequence prediction tasks, 
-        making it an ideal choice for forecasting time series data like electricity prices. By training an LSTM model on historical price data, we can capture complex patterns and relationships in 
-        the data and generate accurate forecasts for future prices.
+                In this section, we will explore the dataset and perform a forecast analysis to predict future electricity prices based on historical data. 
+                We will use machine learning models to train on the available data and generate forecasts for electricity prices in the coming years. 
+                By leveraging the power of data science and predictive analytics, we can gain valuable insights into the dynamics of the electricity market and 
+                make informed decisions about future investments and policy directions.
+                
+                Data Analysis showed us that the data is stationary, there's no seasonlity or trends in the data. We also observed that the data is not correlated (price, revenue, sales, customers).
+                One other important observation is that the data is that there's is no lorn relationship between the price of electricity, informing us that the model should have lesser sequence length (3)
+                
+                After a lot of analysis, we have come to the conclusion that the best model to use for forecasting electricity prices is the LSTM model.
 
-    """
-)
+                It outperforms other models like ARIMA, SARIMA, and Exponential Smoothing. The LSTM model is a type of recurrent neural network that is well-suited for sequence prediction tasks, 
+                making it an ideal choice for forecasting time series data like electricity prices. By training an LSTM model on historical price data, we can capture complex patterns and relationships in 
+                the data and generate accurate forecasts for future prices.
+
+            """
+        )
+    elif page == "Forecast Analysis":
+        # loading in the data
+        data = pd.read_csv('clean_data-2.csv')
+
+        # limiting the year column to 2020
+        data_1 = data[data['year'] <= 2020]
+        # another dataframe for the next 4 years
+        data_2 = data[data['year'] > 2020]
+
+        # setting the title for the page
+        st.title('Price Forecast Analysis')
+
+
+        # loading pipelines and model
+        cat_encoder = joblib.load('cat_encoder.joblib')
+        feature_scaler = joblib.load('feature_scaler.joblib')
+        price_scaler = joblib.load('price_scaler.joblib')
+        model = keras.models.load_model('forecast_model.h5')
+
+        # List of unique values for stateDescription and sectorName
+        unique_states = sorted(data_1['stateDescription'].unique())
+        unique_sectors = sorted(data_1['sectorName'].unique())
+
+
+
+        # Sidebar widgets for user selection
+        state = st.sidebar.selectbox('State Description', unique_states)
+        sector = st.sidebar.selectbox('Sector Name', unique_sectors)
+
+        st.subheader("Data Preview")
+
+        @st.cache_data
+        # Data filtering based on user selection
+        def filter_data(data_1, state, sector):
+            return data_1[(data_1['stateDescription'] == state) & (data_1['sectorName'] == sector)].reset_index(drop=True)
+
+        # Filtered data based on user selection
+        filtered_data = filter_data(data_1, state, sector)
+
+
+        # Displaying the filtered data in a container
+        with st.container():
+            st.write(f"Data for {state} and {sector}")
+            st.dataframe(filtered_data, use_container_width=True)
+
+        st.subheader("Data Analysis")
+        # A button to show some analysis 
+        if st.button('Show Analysis', key='analysis'):
+            with st.container():
+                st.write('Analysis of the data')
+                fig, ax = plt.subplots(1, 2, figsize=(20, 6))
+                sns.lineplot(x='year', y='price', data=filtered_data, ax=ax[0])
+                ax[0].set_title('Price vs Year')
+                sns.lineplot(x='year', y='sales', data=filtered_data, ax=ax[1])
+                ax[1].set_title('Sales vs Year')
+                st.pyplot(fig)
+
+                # showing correalation matrix
+                st.write('Correlation Matrix')
+                fig, ax = plt.subplots(figsize=(15, 10))
+                sns.heatmap(filtered_data[['price', 'revenue', 'sales', 'customers']].corr(), annot=True)
+                st.pyplot(fig)
+
+                # showing linecharts
+                st.write('Line Charts')
+                st.line_chart(filtered_data[['price', 'revenue', 'sales', 'customers']])    
+
+        st.subheader("Forecast Analysis")
+        # A button to show the forecast
+        if st.button('Show Forecast', key='forecast'):
+            with st.container():
+                st.write('Forecast for the data till 2024')
+                # Forecasting the price
+                X = data_2[['year', 'month', 'stateDescription', 'sectorName', 'customers', 'revenue', 'sales']]
+                # encoding the categorical features [stateDescription, sectorName]
+                cat_features = ['stateDescription', 'sectorName']
+                X[cat_features] = cat_encoder.transform(X[cat_features])
+                # scaling the features
+                X_scaled = feature_scaler.transform(X.values)
+                # the price column
+                y = data_2['price']
+                # reshaping the data for the model
+                X_scaled, y = create_dataset(X_scaled, y)
+                # making the forecast
+                y_pred = model.predict(X_scaled)
+                # inverse scaling the forecasted price
+                y_pred = price_scaler.inverse_transform(y_pred)
+                # reducing the dshape of filtered data to match the forecasted price
+                result_df = data_2.iloc[4:].reset_index(drop=True)
+                result_df['forecasted_price'] = y_pred
+                result_df['price'] = y
+                # filtering the data for the selected state and sector
+                result_df = result_df[(result_df['stateDescription'] == state) & (result_df['sectorName'] == sector)].reset_index(drop=True)
+                # plotting the actual and forecasted price
+                fig, ax = plt.subplots(figsize=(15, 6))
+                sns.lineplot(x='year', y='price', data=result_df, ax=ax, label='Actual Price')
+                sns.lineplot(x='year', y='forecasted_price', data=result_df, ax=ax, label='Forecasted Price')
+                ax.set_title('Actual vs Forecasted Price')
+                st.pyplot(fig)
+
+if __name__ == "__main__":
+    main()
